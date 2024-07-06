@@ -1,0 +1,136 @@
+{
+    "$schema" : "https://json-schema.org/draft-07/schema",
+    "definitions" : {
+      "slideOpts": {
+        "description": "Options for type: slide",
+        "type": "object",
+        "required": [
+          "nextText"
+        ],
+        "properties": {
+          "subTitle": {
+            "description": "Smaller text below the title",
+            "type": "string"
+          },
+          "nextText": {
+            "description": "Text on the 'next' button",
+            "type": "string"
+          }
+        }
+      },
+      "questionOpts": {
+        "description": "Options for type: question",
+        "type": "object",
+        "required": [
+          "answers"
+        ],
+        "properties": {
+          "answers": {
+            "description": "A list of case-insensitive answers",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "specialAnswers": {
+            "type": "object",
+            "description": "A map of answer -> section id, which differs from the 'next' key.\nSupports special value '$COMPLETION'",
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object",
+                  "required": [
+                    "next"
+                  ],
+                  "properties": {
+                    "next": {
+                      "type": "string",
+                      "description": "The id of the thing this special answer leads to"
+                    },
+                    "correctMode": {
+                      "description": "Whether this answer is correct or not.\n0 - correct (default)\n1 - incorrect\n2 - ambiguous (no color highlight)",
+                      "type": "integer",
+                      "enum": [0, 1, 2]
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "baseSection": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "next": {
+            "description": "The id that this sections will redirect the user to. Defaults to whatever the next section is in the list\nSpecial value '$COMPLETION' leads to the end screen.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The ID of the section, can be used by the 'next' key",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of this section. For question types, this is the question",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "type": "array",
+    "items": {
+      "oneOf": [
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/baseSection"
+            },
+            {
+              "type": "object",
+              "required": [
+                "type", "slide"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["slide"]
+                },
+                "slide": {
+                  "$ref": "#/definitions/slideOpts"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "$ref": "#/definitions/baseSection"
+            },
+            {
+              "type": "object",
+              "required": [
+                "type", "question"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["question"]
+                },
+                "question": {
+                  "$ref": "#/definitions/questionOpts"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
