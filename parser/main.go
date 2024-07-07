@@ -1,7 +1,5 @@
 package parser
 
-import ()
-
 const FINAL_SECTION_NAME = "$COMPLETION"
 
 type SectionType string
@@ -20,9 +18,9 @@ const (
 )
 
 type Section struct {
-	Type  SectionType
-	Title string
-	ID    string `json:"id"`
+	Type     SectionType `json:"type"`
+	Title    string      `json:"title"`
+	ID       string      `json:"id"`
 
 	Slide    *SlideOpts    `json:"slide,omitempty"`
 	Question *QuestionOpts `json:"-"`
@@ -33,17 +31,22 @@ type QuestionOpts struct {
 }
 
 type AnswerRedirect struct {
-	Next string
+	Next        string
 	CorrectMode CorrectMode
 }
 
 type SlideOpts struct {
-	Next     string   `json:"-"`
-	SubTitle string   `json:"subTitle,omitempty"`
-	NextText string   `json:"nextText"`
+	Next     string `json:"-"`
+	SubTitle string `json:"subTitle,omitempty"`
+	NextText string `json:"nextText"`
 }
 
-func Parse(inp []*RawSection) ([]*Section, map[string]*Section) {
+type SectionState struct {
+	Sections  []*Section
+	SectionID map[string]*Section
+}
+
+func Parse(inp []*RawSection) *SectionState {
 	p := &parser{
 		inp:                      inp,
 		rawSectionSpecialAnswers: map[int]map[string]*AnswerRedirect{},
@@ -54,5 +57,8 @@ func Parse(inp []*RawSection) ([]*Section, map[string]*Section) {
 
 	p.parse()
 
-	return p.prodSections, p.prodIDToSec
+	return &SectionState{
+		Sections:  p.prodSections,
+		SectionID: p.prodIDToSec,
+	}
 }

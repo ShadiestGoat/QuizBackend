@@ -6,8 +6,8 @@ import (
 	"github.com/shadiestgoat/log"
 )
 
-func (p *parser) fatal(sectionI int, err string, args ...any) {
-	log.Fatal("Failed to parsed section #%d: " + err, append([]any{sectionI}, args...)...)
+func (p *parser) fatalSection(sectionI int, err string, args ...any) {
+	log.Fatal("Failed to parsed section #%d: "+err, append([]any{sectionI}, args...)...)
 }
 
 func (p *parser) mkID(i int) string {
@@ -31,13 +31,12 @@ func (p *parser) validateSectionID(id string, sectionI int) {
 	}
 
 	if !p.takenIDs[id] {
-		p.fatal(sectionI, "next id '%v' is not real", id)
+		p.fatalSection(sectionI, "next id '%v' is not real", id)
 	}
 }
 
-
 func (p *parser) checkStr(inp string, k string, sectionI int) {
 	if inp == "" {
-		p.fatal(sectionI, "string in key '%v' cannot be empty", k)
+		p.fatalSection(sectionI, "string in key '%v' cannot be empty", k)
 	}
 }

@@ -12,7 +12,7 @@ type RawSlideOpts struct {
 }
 
 type RawQuestionOpts struct {
-	Answers        []string
+	Answers []string
 	// String or RawSpecialAnswer
 	SpecialAnswers map[string]*yaml.Node
 }
@@ -30,9 +30,13 @@ type RawSection struct {
 func (p *parser) checkAndCacheInp() {
 	for i, s := range p.inp {
 		if s.ID != "" {
-			if p.takenIDs[s.ID] {
-				p.fatal(i, "ID '%v' is taken", s.ID)
+			if s.ID == FINAL_SECTION_NAME {
+				p.fatalSection(i, "ID '%v' is reserved", s.ID)
 			}
+			if p.takenIDs[s.ID] {
+				p.fatalSection(i, "ID '%v' is taken", s.ID)
+			}
+
 			p.takenIDs[s.ID] = true
 		}
 
@@ -42,8 +46,8 @@ func (p *parser) checkAndCacheInp() {
 		case ST_SLIDE:
 			p.checkStr(s.Slide.NextText, "slide.nextText", i)
 		case ST_QUEST:
-			if len(s.Question.Answers) + len(s.Question.SpecialAnswers) == 0 {
-				p.fatal(i, "No answers provided")
+			if len(s.Question.Answers)+len(s.Question.SpecialAnswers) == 0 {
+				p.fatalSection(i, "No answers provided")
 			}
 			specialMap := map[string]*AnswerRedirect{}
 
@@ -55,21 +59,21 @@ func (p *parser) checkAndCacheInp() {
 
 					if err := node.Decode(&fin.Next); err != nil {
 						if err := node.Decode(&fin); err != nil {
-							p.fatal(i, "unable to decode special answer '%v': %v", ans, err)
+							p.fatalSection(i, "unable to decode special answer '%v': %v", ans, err)
 						}
-						
+
 						if fin.CorrectMode < CM_GOOD || fin.CorrectMode > CM_UNKNOWN {
-							p.fatal(i, "unknown correct mode '%v'", fin.CorrectMode)
+							p.fatalSection(i, "unknown correct mode '%v'", fin.CorrectMode)
 						}
 					}
-		
+
 					specialMap[strings.ToLower(ans)] = fin
 				}
 			}
 
 			p.rawSectionSpecialAnswers[i] = specialMap
 		default:
-			p.fatal(i, "Unknown section type '%v'", s.Type)
+			p.fatalSection(i, "Unknown section type '%v'", s.Type)
 		}
 	}
 
