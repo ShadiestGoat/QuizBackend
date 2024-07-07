@@ -1,6 +1,10 @@
 package parser
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/shadiestgoat/log"
+)
 
 type parser struct {
 	inp []*RawSection
@@ -75,5 +79,9 @@ func (p *parser) parse() {
 
 		p.prodIDToSec[s.ID] = s
 		p.prodSections = append(p.prodSections, s)
+	}
+
+	if len(p.prodSections) == 0 {
+		log.Fatal("Failed to parse sections: no sections parsed")
 	}
 }
