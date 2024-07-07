@@ -7,6 +7,7 @@ type SectionType string
 const (
 	ST_SLIDE SectionType = "slide"
 	ST_QUEST SectionType = "question"
+	ST_FINAL SectionType = "finale"
 )
 
 type CorrectMode int
@@ -24,6 +25,13 @@ type Section struct {
 
 	Slide    *SlideOpts    `json:"slide,omitempty"`
 	Question *QuestionOpts `json:"-"`
+	// Impossible to 'cache' in a section map, but the controller can dynamically generate this at runtime
+	Finale *FinaleOpts `json:"finale,omitempty"`
+}
+
+type FinaleOpts struct {
+	FAQ   [][2]string `json:"faq"`
+	Essay string      `json:"essay"`
 }
 
 type QuestionOpts struct {
