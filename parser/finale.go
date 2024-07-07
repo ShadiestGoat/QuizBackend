@@ -12,7 +12,7 @@ func GenerateFinale(key string) *Section {
 			Title:    "Woo! You did it <3",
 			ID:       FINAL_SECTION_NAME,
 			Slide:    &SlideOpts{
-				SubTitle: "I am trans & my name is lucy <3",
+				SubTitle: "I am trans :3",
 			},
 		}
 	}
