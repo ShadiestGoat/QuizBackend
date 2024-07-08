@@ -1,9 +1,103 @@
 package parser
 
-const DEFAULT_FINALE_NAME = "default_resp"
+import (
+	"encoding/json"
+	"fmt"
+	"regexp"
+	"strings"
 
-// TODO: This needs to be populated
-var finaleCache map[string]*FinaleOpts
+	"github.com/shadiestgoat/log"
+)
+
+const DEFAULT_FINALE_NAME = "default_resp"
+var regMultiline = regexp.MustCompile(`\n{2,}`)
+
+var finaleCache = map[string]*FinaleOpts{}
+
+func ParseFinale(key string, fileContent string) {
+	fileContent = regMultiline.ReplaceAllString(fileContent, "\n")
+
+	faq := [][2]string{}
+	curFaq := [2]string{}
+
+	essay := ""
+
+	lastH := ""
+	headingContentStarted := false
+
+	getStrPtr := func () *string {
+		if lastH == "faq" {
+			return &curFaq[1]
+		} else if lastH == "essay" {
+			return &essay
+		}
+
+		return nil
+	}
+
+	headingCB := func() {
+		lastPtr := getStrPtr()
+
+		if lastPtr != nil {
+			*lastPtr = strings.TrimSpace(*lastPtr)
+		}
+
+		if lastH == "faq" && curFaq[0] != "" && headingContentStarted {
+			faq = append(faq, [2]string{curFaq[0], strings.TrimSpace(curFaq[1])})
+		}
+
+		headingContentStarted = false
+		curFaq = [2]string{}
+	}
+
+	for _, l := range strings.Split(fileContent, "\n") {
+		if strings.HasPrefix(l, "# ") {
+			headingCB()
+
+			lastH = strings.ToLower(strings.TrimSpace(l[2:]))
+			continue
+		}
+		if lastH == "faq" && strings.HasPrefix(l, "## ") {
+			headingCB()
+
+			curFaq[0] = strings.ToLower(strings.TrimSpace(l[3:]))
+			continue
+		}
+
+		if l == "" {
+			if !headingContentStarted {
+				continue
+			}
+		} else {
+			headingContentStarted = true
+		}
+
+		if lastH == "faq" && curFaq[0] == "" {
+			log.Warn("Result file '%v' has unknown content under a FAQ header", key)
+			continue
+		}
+
+		ptr := getStrPtr()
+
+		if ptr != nil {
+			*ptr += l + "\n"
+		}
+	}
+
+	headingCB()
+
+	if len(faq) == 0 && len(essay) == 0 {
+		return
+	}
+
+	finaleCache[key] = &FinaleOpts{
+		FAQ:   faq,
+		Essay: strings.TrimSpace(essay),
+	}
+
+	o, _ := json.MarshalIndent(finaleCache[key], "", "\t")
+	fmt.Println(string(o))
+}
 
 func GenerateFinale(key string) *Section {
 	f := finaleCache[key]
