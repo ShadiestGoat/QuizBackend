@@ -7,14 +7,14 @@ import (
 )
 
 type RawSlideOpts struct {
-	SubTitle string
-	NextText string
+	SubTitle string `yaml:"subTitle" json:"subTitle"`
+	NextText string `yaml:"nextText" json:"nextText"`
 }
 
 type RawQuestionOpts struct {
 	Answers []string
 	// String or RawSpecialAnswer
-	SpecialAnswers map[string]*yaml.Node
+	SpecialAnswers map[string]yaml.Node `yaml:"specialAnswers"`
 }
 
 type RawSection struct {
