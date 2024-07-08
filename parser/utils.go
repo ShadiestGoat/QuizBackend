@@ -7,7 +7,7 @@ import (
 )
 
 func (p *parser) fatalSection(sectionI int, err string, args ...any) {
-	log.Fatal("Failed to parsed section #%d: "+err, append([]any{sectionI}, args...)...)
+	log.Fatal("Failed to parsed section #%d: "+err, append([]any{sectionI + 1}, args...)...)
 }
 
 func (p *parser) mkID(i int) string {
