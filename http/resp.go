@@ -5,11 +5,10 @@ import (
 	"net/http"
 
 	"github.com/shadiestgoat/log"
-	"whotfislucy.com/parser"
 )
 
-func writeErr(w http.ResponseWriter, status int, err string) {
-	writeJson(w, status, &RespErr{Error: err})
+type RespErr struct {
+	Error string `json:"error"`
 }
 
 func writeJson(w http.ResponseWriter, status int, body any) {
@@ -19,48 +18,55 @@ func writeJson(w http.ResponseWriter, status int, body any) {
 	log.ErrorIfErr(json.NewEncoder(w).Encode(body), "writing json body")
 }
 
-func nextPage(w http.ResponseWriter, s *parser.Section, ans string, sections *parser.SectionState, key string) {
-	red := &parser.AnswerRedirect{}
-	status := 200
+type HttpFunc[Resp any] func () (*Resp, error)
+type HttpBottomFunc func (w http.ResponseWriter, r *http.Request) (any, int)
 
-	if s.Type == parser.ST_SLIDE {
-		red = &parser.AnswerRedirect{
-			Next:        s.Slide.Next,
-			CorrectMode: parser.CM_UNKNOWN,
+func httpBotWrap(h HttpBottomFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, status := h(w, r)
+		writeJson(w, status, resp)
+	}
+}
+
+func httpBotErrWrap[Resp any](h func (w http.ResponseWriter, r *http.Request) (*Resp, error)) http.HandlerFunc {
+	return httpBotWrap(func(w http.ResponseWriter, r *http.Request) (any, int) {
+		resp, err := h(w, r)
+
+		if err == nil {
+			return resp, 200
 		}
-	} else {
-		next, ok := s.Question.Answers[ans]
-		if ok {
-			red = next
+
+		var httpErr HttpErr
+		if err, ok := err.(HttpErr); ok {
+			httpErr = err
 		} else {
-			status = 422
-			red.CorrectMode = parser.CM_BAD
+			httpErr = ErrUnknown
 		}
-	}
 
-	resp := &RespSection{
-		TransitionType: red.CorrectMode,
-	}
-
-	if red.Next == parser.FINAL_SECTION_NAME {
-		resp.Next = parser.GenerateFinale(key)
-	} else if red.Next != "" {
-		resp.Next = sections.SectionID[red.Next]
-	}
-
-	writeJson(w, status, resp)
+		return &RespErr{httpErr.Error()}, httpErr.Status()
+	})
 }
 
-type Req struct {
-	CurrentSec string `json:"currentSection"`
-	Answer     string `json:"answer"`
+func httpWrap[Resp any](h HttpFunc[Resp]) http.HandlerFunc {
+	return httpBotErrWrap(func(w http.ResponseWriter, r *http.Request) (*Resp, error) {
+		return h()
+	})
 }
 
-type RespErr struct {
-	Error string `json:"error"`
+func httpBotWrapWithBody[Req any, Resp any](h func (w http.ResponseWriter, r *http.Request, b *Req) (*Resp, error)) http.HandlerFunc {
+	return httpBotErrWrap(func(w http.ResponseWriter, r *http.Request) (*Resp, error) {
+		var body Req
+		
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			return nil, ErrBadSyntax
+		}
+
+		return h(w, r, &body)
+	})
 }
 
-type RespSection struct {
-	Next           *parser.Section    `json:"next,omitempty"`
-	TransitionType parser.CorrectMode `json:"transitionMode"`
+func httpWrapWithBody[Req any, Resp any](h func (b *Req) (*Resp, error)) http.HandlerFunc {
+	return httpBotWrapWithBody(func(w http.ResponseWriter, r *http.Request, b *Req) (*Resp, error) {
+		return h(b)
+	})
 }
