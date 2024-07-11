@@ -8,7 +8,7 @@ import (
 	"whotfislucy.com/encryption"
 )
 
-const DEFAULT_FINALE_NAME = "default_resp"
+const DEFAULT_FINALE_NAME = "default_finale"
 var regMultiline = regexp.MustCompile(`\n{2,}`)
 
 var finaleCache = map[string]*FinaleCache{}
