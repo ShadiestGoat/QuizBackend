@@ -11,6 +11,13 @@ import (
 func Router(info *parser.SectionState) chi.Router {
 	r := chi.NewRouter()
 
+	r.Use(
+		cors.AllowAll().Handler,
+		middleware.CleanPath,
+		middleware.AllowContentType("application/json"),
+		middleware.SetHeader("Content-Type", "application/json"),
+	)
+
 	r.Post(`/`, func(w http.ResponseWriter, r *http.Request) {
 		body := &Req{}
 		
