@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=schema.json
+- type: slide
+  id: first-slide
+  title: 'Slide Title'
+  # next is inferred from position in list
+  slide:
+    subTitle: Wow an optional subtitle
+    nextText: Oo a button let me press it
+- type: slide
+  # id is optional - why specify it when you never will explicitly use it?
+  title: 'Second slide is here'
+  slide:
+    nextText: Button!!!!!!!
+- type: question
+  title: Question Here?
+  next: id-slide-skip
+  question:
+    answers:
+      - ans1
+      - ans2
+      - and3
+    specialAnswers:
+      ans4: real-next-slide
+- type: slide
+  id: slide-skip
+  title: "You answered 'ans4'?"
+  slide:
+    nextText: "Wow a button!"
+- type: question
+  id: id-slide-skip
+  title: Type 'FINALE' to end the game
+  question:
+    answers:
+      - other answer
+    specialAnswers:
+      # Answers are case-insensitive
+      finale: $COMPLETION
+- type: slide
+  title: "Your own fault... you're going to the start"
+  next: first-slide
+  slide:
+    nextText: "Fine..."
