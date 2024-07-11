@@ -30,6 +30,10 @@ type Section struct {
 }
 
 type FinaleOpts struct {
+	Secret string `json:"secret"`
+}
+
+type FinaleCache struct {
 	FAQ   [][2]string `json:"faq"`
 	Essay string      `json:"essay"`
 }

@@ -1,18 +1,17 @@
 package parser
 
 import (
-	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/shadiestgoat/log"
+	"whotfislucy.com/encryption"
 )
 
 const DEFAULT_FINALE_NAME = "default_resp"
 var regMultiline = regexp.MustCompile(`\n{2,}`)
 
-var finaleCache = map[string]*FinaleOpts{}
+var finaleCache = map[string]*FinaleCache{}
 
 func ParseFinale(key string, fileContent string) {
 	fileContent = regMultiline.ReplaceAllString(fileContent, "\n")
@@ -90,20 +89,28 @@ func ParseFinale(key string, fileContent string) {
 		return
 	}
 
-	finaleCache[key] = &FinaleOpts{
+	finaleCache[key] = &FinaleCache{
 		FAQ:   faq,
 		Essay: strings.TrimSpace(essay),
 	}
+}
 
-	o, _ := json.MarshalIndent(finaleCache[key], "", "\t")
-	fmt.Println(string(o))
+func GetFinale(secret string) *FinaleCache {
+	dec := encryption.Decrypt(secret)
+	if dec == "" {
+		return nil
+	}
+
+	return finaleCache[dec]
 }
 
 func GenerateFinale(key string) *Section {
 	f := finaleCache[key]
-	
+
 	if f == nil {
 		f = finaleCache[DEFAULT_FINALE_NAME]
+		key = DEFAULT_FINALE_NAME
+
 		if f == nil {
 			return &Section{
 				Type:     ST_SLIDE,
@@ -119,6 +126,8 @@ func GenerateFinale(key string) *Section {
 	return &Section{
 		Type:     ST_FINAL,
 		ID:       FINAL_SECTION_NAME,
-		Finale:   f,
+		Finale:   &FinaleOpts{
+			Secret: encryption.Encrypt(key),
+		},
 	}
 }
