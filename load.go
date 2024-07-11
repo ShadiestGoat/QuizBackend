@@ -15,7 +15,7 @@ import (
 
 type opts struct {
 	FinaleLoc  []string `short:"f" long:"finale"   default:"finale"        description:"The location of the finale pages"`
-	EnvLoc     []string `short:"e" long:"env"      default:".env"          description:"The .env file"`
+	EnvLoc     []string `short:"e" long:"env"                              description:"The .env file"`
 	SectionLoc string   `short:"s" long:"sections" default:"sections.yaml" description:"The sections file"`
 }
 
@@ -36,7 +36,7 @@ func Load(conf *opts) *parser.SectionState {
 	log.Debug("%#v", conf)
 
 	for _, env := range conf.EnvLoc {
-		godotenv.Load(env)
+		log.ErrorIfErr(godotenv.Load(env), "reading env file '%v'", env)
 	}
 
 	secret := os.Getenv("AUTH_SECRET_KEY")
