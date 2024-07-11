@@ -9,6 +9,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/shadiestgoat/log"
 	"gopkg.in/yaml.v3"
+	"whotfislucy.com/encryption"
 	"whotfislucy.com/parser"
 )
 
@@ -37,6 +38,9 @@ func Load(conf *opts) *parser.SectionState {
 	for _, env := range conf.EnvLoc {
 		godotenv.Load(env)
 	}
+
+	secret := os.Getenv("AUTH_SECRET_KEY")
+	log.FatalIfErr(encryption.Init(secret), "initializing the aes cipher")
 
 	sd, err := os.ReadFile(conf.SectionLoc)
 	log.FatalIfErr(err, "reading sections file '%v'", conf.SectionLoc)
