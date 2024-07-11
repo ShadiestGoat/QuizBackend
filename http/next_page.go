@@ -52,7 +52,12 @@ func postNextSec(b *ReqNextSec, info *parser.SectionState) (*RespNextSec, error)
 	}
 
 	if red.Next == parser.FINAL_SECTION_NAME {
-		resp.Next = parser.GenerateFinale(b.Key)
+		finale := parser.GenerateFinale(b.Key)
+		if finale == nil {
+			return nil, ErrBadSecret
+		}
+
+		resp.Next = finale
 	} else if red.Next != "" {
 		resp.Next = info.SectionID[red.Next]
 	}
