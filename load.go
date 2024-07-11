@@ -18,9 +18,7 @@ type opts struct {
 	SectionLoc string   `short:"s" long:"sections" default:"sections.yaml" description:"The sections file"`
 }
 
-func Load() *parser.SectionState {
-	conf := &opts{}
-
+func Load(conf *opts) *parser.SectionState {
 	fParser := flags.NewParser(conf, flags.HelpFlag|flags.AllowBoolValues|flags.IgnoreUnknown|flags.PassDoubleDash)
 	log.PrintDebug("%#v", fParser.Groups()[0].Options())
 
