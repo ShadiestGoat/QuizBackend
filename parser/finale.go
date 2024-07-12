@@ -13,7 +13,7 @@ var regMultiline = regexp.MustCompile(`\n{2,}`)
 
 var finaleCache = map[string]*FinaleCache{}
 
-func ParseFinale(key string, fileContent string) {
+func ParseFinale(key string, fileContent string) *FinaleCache {
 	fileContent = regMultiline.ReplaceAllString(fileContent, "\n")
 
 	faq := [][2]string{}
@@ -28,6 +28,7 @@ func ParseFinale(key string, fileContent string) {
 		if lastH == "faq" {
 			return &curFaq[1]
 		} else if lastH == "essay" {
+			essay += "\n"
 			return &essay
 		}
 
@@ -54,12 +55,16 @@ func ParseFinale(key string, fileContent string) {
 			headingCB()
 
 			lastH = strings.ToLower(strings.TrimSpace(l[2:]))
+
+			if !(lastH == "faq" || lastH == "essay") {
+				log.Fatal("Bad finale file '%v': unknown h1 '%v'", key, lastH)
+			}
 			continue
 		}
 		if lastH == "faq" && strings.HasPrefix(l, "## ") {
 			headingCB()
 
-			curFaq[0] = strings.ToLower(strings.TrimSpace(l[3:]))
+			curFaq[0] = strings.TrimSpace(l[3:])
 			continue
 		}
 
@@ -86,13 +91,17 @@ func ParseFinale(key string, fileContent string) {
 	headingCB()
 
 	if len(faq) == 0 && len(essay) == 0 {
-		return
+		return nil
 	}
 
-	finaleCache[key] = &FinaleCache{
+	c := &FinaleCache{
 		FAQ:   faq,
-		Essay: strings.TrimSpace(essay),
+		Essay: strings.TrimSpace(regMultiline.ReplaceAllString(essay, "\n")),
 	}
+
+	finaleCache[key] = c
+
+	return c
 }
 
 func GetFinale(secret string) *FinaleCache {
