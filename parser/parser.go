@@ -18,7 +18,7 @@ type parser struct {
 
 func (p *parser) prepInp() {
 	for i, s := range p.inp {
-		if s.ID != "" {
+		if s.ID == "" {
 			s.ID = p.mkID(i)
 		}
 

@@ -7,9 +7,9 @@ import (
 )
 
 type ReqNextSec struct {
-	CurrentSec string `json:"currentSection"`
-	Answer     string `json:"answer"`
-	Key        string `json:"key"`
+	CurrentSec string `json:"currentSection,omitempty"`
+	Answer     string `json:"answer,omitempty"`
+	Key        string `json:"key,omitempty"`
 }
 
 type RespNextSec struct {
@@ -39,7 +39,7 @@ func postNextSec(b *ReqNextSec, info *parser.SectionState) (*RespNextSec, error)
 			CorrectMode: parser.CM_UNKNOWN,
 		}
 	} else {
-		next, ok := s.Question.Answers[strings.ToLower(strings.TrimSpace(b.CurrentSec))]
+		next, ok := s.Question.Answers[strings.ToLower(strings.TrimSpace(b.Answer))]
 		if ok {
 			red = next
 		} else {
