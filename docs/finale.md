@@ -115,3 +115,8 @@ faq:
   - question: Real question
     answer: Real answer
 ```
+
+## Name of the file
+
+The name of the finale file - it signifies the key that a user needs to access this finale. The key is without the `.md` part.
+
