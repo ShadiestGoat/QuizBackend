@@ -25,7 +25,7 @@ func main() {
 		p = port
 	}
 
-	log.Debug("Running http server on localhost;%v", port)
+	log.Success("Running http server on localhost:%v", port)
 	hServer := &http.Server{Addr: ":" + port, Handler: router.Router(sections)}
 
 	go func(s *http.Server) {

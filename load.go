@@ -21,7 +21,6 @@ type opts struct {
 
 func Load(conf *opts) *parser.SectionState {
 	fParser := flags.NewParser(conf, flags.HelpFlag|flags.AllowBoolValues|flags.IgnoreUnknown|flags.PassDoubleDash)
-	log.PrintDebug("%#v", fParser.Groups()[0].Options())
 
 	_, err := fParser.Parse()
 	if err != nil {
@@ -33,13 +32,15 @@ func Load(conf *opts) *parser.SectionState {
 		}
 	}
 
-	log.Debug("%#v", conf)
-
 	for _, env := range conf.EnvLoc {
 		log.ErrorIfErr(godotenv.Load(env), "reading env file '%v'", env)
 	}
 
 	secret := os.Getenv("AUTH_SECRET_KEY")
+	if secret == "" {
+		log.Fatal("Env var 'AUTH_SECRET_KEY' is non existent, but is needed!")
+	}
+
 	log.FatalIfErr(encryption.Init(secret), "initializing the aes cipher")
 
 	sd, err := os.ReadFile(conf.SectionLoc)
