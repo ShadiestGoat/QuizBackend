@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,7 +30,10 @@ func main() {
 	hServer := &http.Server{Addr: ":" + port, Handler: router.Router(sections)}
 
 	go func(s *http.Server) {
-		log.FatalIfErr(s.ListenAndServe(), "running http server")
+		err := s.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.FatalIfErr(err, "running http server")
+		}
 	}(hServer)
 
 	cancel := make(chan os.Signal, 2)
