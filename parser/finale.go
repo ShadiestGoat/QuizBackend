@@ -1,107 +1,127 @@
 package parser
 
 import (
+	"errors"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/shadiestgoat/log"
 	"whotfislucy.com/encryption"
 )
 
-const DEFAULT_FINALE_NAME = "default_finale"
+const DEFAULT_FINALE_NAME = "$default"
 var regMultiline = regexp.MustCompile(`\n{2,}`)
 
 var finaleCache = map[string]*FinaleCache{}
+// A cache of already parsed aliases
+var aliasCache = map[string]bool{}
 
-func ParseFinale(key string, fileContent string) *FinaleCache {
-	fileContent = regMultiline.ReplaceAllString(fileContent, "\n")
+func readFinaleFile(f string) string {
+	d, err := os.ReadFile(f)
+	if err != nil && errors.Is(err, os.ErrNotExist) {
+		return ""
+	}
 
-	faq := [][2]string{}
-	curFaq := [2]string{}
+	log.FatalIfErr(err, "reading file '%v'", f)
 
-	essay := ""
+	return strings.TrimSpace(string(regMultiline.ReplaceAll(d, []byte{'\n'})))
+}
 
-	lastH := ""
-	headingContentStarted := false
+// figure out the finale name & key for it.
+func parseFinaleName(name string) (realName, key string) {
+	if name == "" {
+		// sanity check
+		return "", ""
+	}
 
-	getStrPtr := func () *string {
-		if lastH == "faq" {
-			return &curFaq[1]
-		} else if lastH == "essay" {
-			essay += "\n"
-			return &essay
-		}
+	if name[0] != '$' {
+		return "", name
+	}
 
+	if name == DEFAULT_FINALE_NAME {
+		return name, name
+	}
+
+	spl := strings.SplitN(name, "-", 2)
+	
+	realName = strings.TrimSpace(strings.ToLower(spl[0][1:]))
+
+	if len(spl) == 1 {
+		key = os.Getenv("KEYS_" + realName)
+	} else {
+		key = spl[1]
+	}
+
+	return
+}
+
+// Prase a finale given the name of the folder & the full path including the folder
+func ParseFinale(name string, path string) *FinaleCache {
+	name, key := parseFinaleName(name)
+
+	if name == "" {
 		return nil
 	}
-
-	headingCB := func() {
-		lastPtr := getStrPtr()
-
-		if lastPtr != nil {
-			*lastPtr = strings.TrimSpace(*lastPtr)
-		}
-
-		if lastH == "faq" && curFaq[0] != "" && headingContentStarted {
-			faq = append(faq, [2]string{curFaq[0], strings.TrimSpace(curFaq[1])})
-		}
-
-		headingContentStarted = false
-		curFaq = [2]string{}
+	if aliasCache[name] {
+		log.Fatal("Finale name '%v' is already taken!", name)
+	}
+	if finaleCache[key] != nil {
+		log.Fatal("Finale key '%v' is duplicated!", key)
+	}
+	if name != DEFAULT_FINALE_NAME && key == DEFAULT_FINALE_NAME {
+		log.Fatal("Key '%v' is reserved!", key)
 	}
 
-	for _, l := range strings.Split(fileContent, "\n") {
-		if strings.HasPrefix(l, "# ") {
-			headingCB()
+	cache := &FinaleCache{}
+	
+	aliasCache[name] = true
+	finaleCache[key] = cache
 
-			lastH = strings.ToLower(strings.TrimSpace(l[2:]))
+	cache.Essay = readFinaleFile(filepath.Join(path, "essay.md"))
 
-			if !(lastH == "faq" || lastH == "essay") {
-				log.Fatal("Bad finale file '%v': unknown h1 '%v'", key, lastH)
-			}
-			continue
-		}
-		if lastH == "faq" && strings.HasPrefix(l, "## ") {
-			headingCB()
+	rawFAQ := readFinaleFile(filepath.Join(path, "faq.md"))
+	cache.FAQ = parseFAQ(rawFAQ)
 
-			curFaq[0] = strings.TrimSpace(l[3:])
-			continue
-		}
+	return cache
+}
 
+func parseFAQ(rawFAQ string) [][2]string {
+	oFAQ := [][2]string{}
+	curFAQ := [2]string{}
+
+	addFAQ := func() {
+		curFAQ[1] = strings.TrimSpace(curFAQ[1])
+		oFAQ = append(oFAQ, curFAQ)
+		
+		curFAQ = [2]string{}
+	}
+
+	for _, l := range strings.Split(rawFAQ, "\n") {
+		l = strings.TrimRightFunc(l, unicode.IsSpace)
 		if l == "" {
-			if !headingContentStarted {
-				continue
-			}
-		} else {
-			headingContentStarted = true
-		}
-
-		if lastH == "faq" && curFaq[0] == "" {
-			log.Warn("Result file '%v' has unknown content under a FAQ header", key)
 			continue
 		}
 
-		ptr := getStrPtr()
-
-		if ptr != nil {
-			*ptr += l + "\n"
+		if l := strings.TrimLeftFunc(l, unicode.IsSpace); strings.HasPrefix(l, "# ") {
+			addFAQ()
+			curFAQ[0] = l[2:]
+			continue
 		}
+
+		// At this point, its def not a h1. But if it *is* a heading, lets upgrade it by 1
+		if strings.HasPrefix(l, "#") {
+			l = l[1:]
+		}
+
+		curFAQ[0] += l + "\n"
 	}
 
-	headingCB()
+	addFAQ()
 
-	if len(faq) == 0 && len(essay) == 0 {
-		return nil
-	}
-
-	c := &FinaleCache{
-		FAQ:   faq,
-		Essay: strings.TrimSpace(regMultiline.ReplaceAllString(essay, "\n")),
-	}
-
-	finaleCache[key] = c
-
-	return c
+	return oFAQ
 }
 
 func GetFinale(secret string) *FinaleCache {

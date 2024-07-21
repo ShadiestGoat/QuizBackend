@@ -1,26 +1,44 @@
-# Finale file
-Finales are generated using markdown files. You'll need to specify a directory in which the finales are stored. All must end with `.md`.
+# Finale config
 
-Each file can consist of 2 `h1` headings `# Heading`, though they can repeat interchangeably & the data will be merged in the end. The headings are case-insensitive. The 2 headings are `faq` & `essay`. They represent 2 different parts of the finale.
+Finales are the final section that is shown to a user when they have completed your quiz. The catch is that different people can get different finales through per-user (/per-group) *keys*. A *key* is a secret that is sent to the user, which authenticates them to view the finale
 
-## The FAQ section
+Finale sections are generated using a *finales config folder*, specified using the `-f` flag ([see flag descriptions in the README](../README.md#flags)). All *finale files* must end with `.md`.
 
-The `faq` section consists of h2 elements (`## Heading 2`), which are interpreted as questions, and text elements, which are answers to the question in the `h2`. For example:
+The *finales config folder* consists of other folders. The name of each *finale folder* can take 3 forms:
+
+1. `$[name]-[key]`
+2. `$[name]`
+3. `[key]`
+
+Where square brackets are not needed. The *key* is describe previously. The *name* is a quick alias used for your viewing pleasure only. For obvious reasons, `-` are not allowed in names. Additionally, names are case-insensitive (keys are not!). Any name overlaps will be detected and the app will fail to start.
+In the 2nd form, `$[name]` a key is missing. In order to give it a key, you must pass an env variable `KEYS_[NAME]`. (eg. for a folder named `$foobar`, the env var must be `KEYS_FOOBAR`)
+
+Finally, there is a special name - `$default`. This is the default finale - what is shown to a user without a key. This *finale folder* is optional - but if not provided users without a key would go through the whole quiz without reward.
+
+Each *finale folder* must contain at least 1 file - `essay.md` or `faq.md`. Both can be specified. They have slight differences in structure.
+
+## Essay File
+
+The essay file is pretty simple - its just a markdown file. It has no special rules, all headings are supported - add at `h1` headings if you want to
+
+## FAQ File
+
+This file has a special setup. It consists of `h1` elements (`# Heading 1`), which are interpreted as questions, and text elements, which are answers to the question in the `h1`. The text elements don't have to only include inline content, ie. they can also include headings (starting with `h2`, since `h1` is interpreted as a question). Any heading that is in text portion has 1 level added to it - so `## Heading` is interpreted as `# Heading`.
 
 ```md
-# FAQ
-
-## Here is a question
+# Here is a question
 
 Here is an answer
 
 
-## Here is another question
+# Here is another question
 
 Here is another answer
 And another line
 
 And a 3d line!
+
+## And a subheading
 ```
 
 This file would be interpreted as the following:
@@ -34,89 +52,9 @@ This file would be interpreted as the following:
     Here is another answer
     And another line
     And a 3d line!
+    \# And a subheading
 ```
-
-## The essay portion
-
-The essay is just a bunch of lines that can be shown the user.
-
-```md
-# Essay
-
-This is an essay.
-2nd line.
-
-3d line. Thats a crazy one!
-```
-
-This will be shown to the user as the following:
-
-```
-This is an essay.
-2nd line.
-3d line. Thats a crazy one!
-```
-
-## The default finale
-
-A file named `default_finale.md` is special - its the default finale. You **should** have this, otherwise a user that completes the quiz without a special key that you give to them will get a `401` response.
 
 ## Finale file interpretation
 
-Spaces around between `h1`, `h2` and text elements are trimmed. Additionally, `h1` are merged together. So, in the following example:
-
-```md
-# Essay
-
-Line 1
-
-## FAQ
-
-### Fake Question
-
-Fake answer ig
-
-# faq
-
-## Real question
-
-Real answer
-
-# Essay
-
-Another essay line
-
-# fAq
-
-## Question
-
-# Essay
-
-More lines here
-Yay even more content
-
-# Faq
-
-Content here
-```
-
-This would me interpreted as the following yaml:
-
-```yaml
-essay: |-
-  Line 1
-  ## FAQ
-  ### Fake Question
-  Fake answer ig
-  Another essay line
-  More lines here
-  Yay even more content
-faq:
-  - question: Real question
-    answer: Real answer
-```
-
-## Name of the file
-
-The name of the finale file - it signifies the key that a user needs to access this finale. The key is without the `.md` part.
-
+Some markdown interpreters require 2 newlines to create a newline in the result. For removing this ambiguity, the app force parses any consecutive newlines as 1 newline. Additionally, extra whitespace **at the end** of lines is removed.

@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/joho/godotenv"
@@ -58,18 +57,12 @@ func Load(conf *opts) *parser.SectionState {
 			n := f.Name()
 			fullPath := filepath.Join(finaleDir, n)
 
-			if f.IsDir() {
-				log.Warn("'%v' is a directory, will not descend!", fullPath)
-				continue
-			} else if !strings.HasSuffix(n, ".md") {
-				log.Warn("'%v' is not a .md file, skipping...", fullPath)
+			if !f.IsDir() {
+				log.Warn("'%v' is not a directory, skipping!", fullPath)
 				continue
 			}
 
-			mdData, err := os.ReadFile(fullPath)
-			log.FatalIfErr(err, "reading file '%v' as a finale", fullPath)
-
-			parser.ParseFinale(n[:len(n)-3], string(mdData))
+			parser.ParseFinale(n, fullPath)
 		}
 	}
 
