@@ -93,6 +93,11 @@ func parseFAQ(rawFAQ string) [][2]string {
 	curFAQ := [2]string{}
 
 	addFAQ := func() {
+		if curFAQ[0] == "" {
+			// No question = not a valid faq
+			return
+		}
+
 		curFAQ[1] = strings.TrimSpace(curFAQ[1])
 		oFAQ = append(oFAQ, curFAQ)
 		
@@ -112,11 +117,8 @@ func parseFAQ(rawFAQ string) [][2]string {
 		}
 
 		// At this point, its def not a h1. But if it *is* a heading, lets upgrade it by 1
-		if strings.HasPrefix(l, "#") {
-			l = l[1:]
-		}
-
-		curFAQ[0] += l + "\n"
+		l = strings.TrimPrefix(l, "#")
+		curFAQ[1] += l + "\n"
 	}
 
 	addFAQ()
